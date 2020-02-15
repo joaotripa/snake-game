@@ -38,8 +38,20 @@ class pixel(object):
             centre = scale // 2
             radius = 4
             black = 0,0,0
-            eye1 = (x*scale + centre + 2*radius -1, y*scale + 10)
-            eye2 = (x*scale + centre - 2*radius +1, y*scale + 10)
+            if self.dirx == 1 and self.diry == 0: #* moving right
+                eye1 = (x*scale + 25, y*scale + centre + 2*radius -1)
+                eye2 = (x*scale + 25, y*scale + centre - 2*radius +1)
+            if self.dirx == -1 and self.diry == 0: #* moving left
+                eye1 = (x*scale + 10, y*scale + centre + 2*radius -1)
+                eye2 = (x*scale + 10, y*scale + centre - 2*radius +1)
+            if self.dirx == 0 and self.diry == -1: #* moving up
+                eye1 = (x*scale + centre + 2*radius -1, y*scale + 10)
+                eye2 = (x*scale + centre - 2*radius +1, y*scale + 10)
+            if self.dirx == 0 and self.diry == 1: #* moving down
+                eye1 = (x*scale + centre + 2*radius -1, y*scale + 25)
+                eye2 = (x*scale + centre - 2*radius +1, y*scale + 25)
+            
+            
             pygame.draw.circle(screen, black, eye1, radius)
             pygame.draw.circle(screen, black, eye2, radius)
     
@@ -80,6 +92,9 @@ class snake(object):
                     self.dirx = 0 
                     self.diry = 1
                     self.turns[self.head.pos[:]] = [self.dirx, self.diry]
+
+                elif keys[pygame.K_ESCAPE]:
+                    sys.exit()
                 
 
         for i, pix in enumerate(self.body):
@@ -124,14 +139,12 @@ def main():
     
     screen = pygame.display.set_mode(size)
 
-    black = 0, 0, 0
-    screen.fill(black)
-    drawGrid(size,size_grid,screen)
-    pygame.display.flip()
+    # black = 0, 0, 0
+    # screen.fill(black)
+    # drawGrid(size,size_grid,screen)
+    # pygame.display.flip()
 
     s = snake()
-    #s.draw(screen)
-    #pygame.display.update()
 
     clock = pygame.time.Clock()
 
