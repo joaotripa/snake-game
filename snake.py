@@ -2,7 +2,7 @@ import pygame
 import sys
 import random
 
-def drawGrid(size, size_grid, screen):
+def drawGrid(size, size_grid, display):
     x=0
     y=0
     white = 255, 255, 255
@@ -10,8 +10,8 @@ def drawGrid(size, size_grid, screen):
     for i in range(size_grid[0]): 
         x = x + size[0] // size_grid[0]
         y = y + size[1] // size_grid[1]
-        pygame.draw.line(screen, white, (x,0), (x,size[0]))
-        pygame.draw.line(screen, white, (0,y), (size[1],y))
+        pygame.draw.line(display, white, (x,0), (x,size[0]))
+        pygame.draw.line(display, white, (0,y), (size[1],y))
 
 class pixel(object):
     rows = 20
@@ -27,12 +27,12 @@ class pixel(object):
         self.diry = diry
         self.pos = (self.pos[0] + self.dirx, self.pos[1] + self.diry)
 
-    def draw(self, screen, eyes=False):
+    def draw(self, display, eyes=False):
         scale = self.width // self.rows
         x = self.pos[0]
         y = self.pos[1]
 
-        pygame.draw.rect(screen, self.color, 
+        pygame.draw.rect(display, self.color, 
         (x*scale,y*scale, scale, scale))
 
         if eyes:
@@ -53,19 +53,21 @@ class pixel(object):
                 eye2 = (x*scale + centre - 2*radius +1, y*scale + 25)
             
             
-            pygame.draw.circle(screen, black, eye1, radius)
-            pygame.draw.circle(screen, black, eye2, radius)
+            pygame.draw.circle(display, black, eye1, radius)
+            pygame.draw.circle(display, black, eye2, radius)
     
 class snake(object):
-    body = []
-    turns = {}
+    
     
     def __init__(self,color = (0,255,0), init_pos = (10,10)):
+        self.body = []
+        self.turns = {}
         self.color = color    # * Default green color
         self.head = pixel(init_pos, color)
         self.body.append(self.head)
         self.dirx = 1
         self.diry = 0
+        self.collision = False
 
     def move(self):
         for event in pygame.event.get():
@@ -117,12 +119,16 @@ class snake(object):
                 else:
                     pix.move(pix.dirx,pix.diry)
 
-    def draw(self, screen):
+    def draw(self, display):
+        head = self.body[0]
         for i, pix in enumerate(self.body):
             if i ==0:
-                pix.draw(screen, True)
+                pix.draw(display, True)
+            elif head.pos == pix.pos:
+                self.collision = True
+                break
             else:
-                pix.draw(screen)
+                pix.draw(display)
     
     def increaseSnake(self):
         tail = self.body[-1]
@@ -140,16 +146,26 @@ class snake(object):
         self.body[-1].dirx = tail.dirx 
         self.body[-1].diry = tail.diry
 
+    def reset(self, init_pos, color = (0,255,0)):
+        self.body = []
+        self.turns = {}
+        self.color = color    # * Default green color
+        self.head = pixel(init_pos, color)
+        self.body.append(self.head)
+        self.dirx = 1
+        self.diry = 0
+        self.collision = False
+
 class food(object):
     def __init__(self, size_grid):
         self.x = random.randint(0,size_grid[0]-1) #* 20 rows and columns, 0-19
         self.y = random.randint(0,size_grid[0]-1) #* 20 rows and columns, 0-19
         self.gridSize = size_grid
 
-    def draw(self, screen):
+    def draw(self, display):
         red = 255,0,0
         newFood = pixel((self.x,self.y),red)
-        newFood.draw(screen)
+        newFood.draw(display)
 
     def createNew(self, snake):
         x = random.randint(0,self.gridSize[0]-1) #* 20 rows and columns, 0-19
@@ -169,26 +185,53 @@ class food(object):
         else: return False
 
 
-def redraw(snake, food, size, size_grid, screen):
+def redraw(snake, food, size, size_grid, display):
     black = 0, 0, 0
-    screen.fill(black)
-    snake.draw(screen)
-    food.draw(screen)
-    drawGrid(size,size_grid, screen)
+    display.fill(black)
+    snake.draw(display)
+    food.draw(display)
+    drawGrid(size,size_grid, display)
     pygame.display.update()
 
-
-def loop():
+def menu():
     pygame.init()
     size = width, height = 640, 640 # ! width and heigh must have same dimensions
     size_grid = rows, cols = 20, 20    
-    
-    screen = pygame.display.set_mode(size)
+    menuDisplay = pygame.display.set_mode(size)
+    pygame.display.set_caption('Snake Game')
+
+    while True:
+        #font = pygame.font.SysFont(None, 250)
+        titleFont = pygame.font.Font('ARCADECLASSIC.TTF', 85)
+        title = titleFont.render('Snake Game', True, (0,255,0))
+        menuDisplay.blit(title,(105,200))
+        secondTextFont = pygame.font.Font('ARCADECLASSIC.TTF', 20)
+        pressToStartText = secondTextFont.render('Press space to Start', True, (255,255,255))
+        menuDisplay.blit(pressToStartText,(225,320))
+        authorFont = pygame.font.Font('ARCADECLASSIC.TTF', 20)
+        authorText = authorFont.render('Author Joao Tripa', True, (255,255,255))
+        menuDisplay.blit(authorText,(235,600))
+        pygame.display.update()
+        for event in pygame.event.get():
+                if event.type == pygame.QUIT: sys.exit()
+
+                keys =pygame.key.get_pressed()
+
+                for key in keys:
+                    if keys[pygame.K_SPACE]:
+                        loop(size,size_grid)
+                    if keys[pygame.K_ESCAPE]:
+                        sys.exit()
+
+
+def loop(size, size_grid):
+    size = size
+    size_grid = size_grid
+    display = pygame.display.set_mode(size)
+    pygame.display.set_caption('Snake Game') 
 
     s = snake()
     f = food(size_grid)
-    
-
 
     clock = pygame.time.Clock()
 
@@ -199,8 +242,12 @@ def loop():
         if f.gotEaten(s):
             s.increaseSnake()
             f.createNew(s)
+        if s.collision:
+            s.reset((size_grid[0]//2,size_grid[0]//2))
+            f.createNew(s)
+            
 
-        redraw(s, f, size, size_grid, screen)
+        redraw(s, f, size, size_grid, display)
         
 
-loop()
+menu()
