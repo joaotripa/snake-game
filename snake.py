@@ -107,14 +107,14 @@ class snake(object):
                 pix.move(turn[0],turn[1])
                 if i == len(self.body)-1:
                     self.turns.pop(pixpos)
-            else:
-                if pix.dirx == -1 and pix.pos[0] <= 0: 
+            else: #* Setting grid boundaries
+                if pix.dirx == -1 and pix.pos[0] <= 0: #* if passes left limit, appears on the right
                     pix.pos = (pix.rows-1, pix.pos[1])
-                elif pix.dirx == 1 and pix.pos[0] >= pix.rows-1:
+                elif pix.dirx == 1 and pix.pos[0] >= pix.rows-1: #* if passes right limit, appears on the left
                     pix.pos = (0,pix.pos[1])
-                elif pix.diry == 1 and pix.pos[1] >= pix.rows-1: 
+                elif pix.diry == 1 and pix.pos[1] >= pix.rows-1: #* if passes bottom limit, appears on top
                     pix.pos = (pix.pos[0], 0)
-                elif pix.diry == -1 and pix.pos[1] <= 0: 
+                elif pix.diry == -1 and pix.pos[1] <= 0: #* if passes top limit, appears on the bottom
                     pix.pos = (pix.pos[0],pix.rows-1)
                 else:
                     pix.move(pix.dirx,pix.diry)
@@ -198,20 +198,29 @@ def menu():
     size = width, height = 640, 640 # ! width and heigh must have same dimensions
     size_grid = rows, cols = 20, 20    
     menuDisplay = pygame.display.set_mode(size)
+    black = 0, 0, 0
+    menuDisplay.fill(black)
     pygame.display.set_caption('Snake Game')
+
+    s = snake()
+    f = food(size_grid)
 
     while True:
         #font = pygame.font.SysFont(None, 250)
         titleFont = pygame.font.Font('ARCADECLASSIC.TTF', 85)
         title = titleFont.render('Snake Game', True, (0,255,0))
         menuDisplay.blit(title,(105,200))
+
         secondTextFont = pygame.font.Font('ARCADECLASSIC.TTF', 20)
         pressToStartText = secondTextFont.render('Press space to Start', True, (255,255,255))
         menuDisplay.blit(pressToStartText,(225,320))
+
         authorFont = pygame.font.Font('ARCADECLASSIC.TTF', 20)
-        authorText = authorFont.render('Author Joao Tripa', True, (255,255,255))
+        authorText = authorFont.render('Made by Joao Tripa', True, (255,255,255))
         menuDisplay.blit(authorText,(235,600))
+
         pygame.display.update()
+
         for event in pygame.event.get():
                 if event.type == pygame.QUIT: sys.exit()
 
@@ -219,35 +228,68 @@ def menu():
 
                 for key in keys:
                     if keys[pygame.K_SPACE]:
-                        loop(size,size_grid)
+                        gameLoop(s, f, size, size_grid)
                     if keys[pygame.K_ESCAPE]:
                         sys.exit()
 
+def gameOver(snake, food, size, size_grid):
+    endDisplay = pygame.display.set_mode(size)
+    black = 0, 0, 0
+    endDisplay.fill(black)
+    
+    while True:
 
-def loop(size, size_grid):
+        #font = pygame.font.SysFont(None, 250)
+        titleFont = pygame.font.Font('ARCADECLASSIC.TTF', 85)
+        title = titleFont.render('Game Over', True, (0,255,0))
+        endDisplay.blit(title,(130,200))
+
+        scoreFont = pygame.font.Font('ARCADECLASSIC.TTF', 35)
+        score = scoreFont.render('Your Score is '+str(len(snake.body)), True, (255,255,255))
+        endDisplay.blit(score,(195,280))
+
+        secondTextFont = pygame.font.Font('ARCADECLASSIC.TTF', 20)
+        pressToTryAgainText = secondTextFont.render('Press space to try again', True, (255,255,255))
+        endDisplay.blit(pressToTryAgainText,(210,380))
+
+        authorFont = pygame.font.Font('ARCADECLASSIC.TTF', 20)
+        authorText = authorFont.render('Made by Joao Tripa', True, (255,255,255))
+        endDisplay.blit(authorText,(235,600))
+        
+        pygame.display.update()
+
+        for event in pygame.event.get():
+                if event.type == pygame.QUIT: sys.exit()
+
+                keys =pygame.key.get_pressed()
+
+                for key in keys:
+                    if keys[pygame.K_SPACE]:
+                        gameLoop(snake,food, size, size_grid)
+                    if keys[pygame.K_ESCAPE]:
+                        sys.exit()
+
+def gameLoop(snake, food, size, size_grid):
     size = size
     size_grid = size_grid
     display = pygame.display.set_mode(size)
     pygame.display.set_caption('Snake Game') 
 
-    s = snake()
-    f = food(size_grid)
+    snake.reset((size_grid[0]//2,size_grid[0]//2))
 
     clock = pygame.time.Clock()
 
     while True:
         #pygame.time.delay(50)
         clock.tick(10)
-        s.move()
-        if f.gotEaten(s):
-            s.increaseSnake()
-            f.createNew(s)
-        if s.collision:
-            s.reset((size_grid[0]//2,size_grid[0]//2))
-            f.createNew(s)
+        snake.move()
+        if food.gotEaten(snake):
+            snake.increaseSnake()
+            food.createNew(snake)
+        if snake.collision:
+            gameOver(snake,food,size,size_grid)
             
-
-        redraw(s, f, size, size_grid, display)
+        redraw(snake, food, size, size_grid, display)
         
 
 menu()
